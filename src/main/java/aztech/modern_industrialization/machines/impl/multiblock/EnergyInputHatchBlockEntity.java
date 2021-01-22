@@ -27,6 +27,7 @@ import static aztech.modern_industrialization.machines.impl.multiblock.HatchType
 
 import aztech.modern_industrialization.api.energy.CableTier;
 import aztech.modern_industrialization.machines.impl.MachineFactory;
+import team.reborn.energy.EnergyTier;
 
 public class EnergyInputHatchBlockEntity extends HatchBlockEntity {
     public final CableTier tier;
@@ -41,4 +42,19 @@ public class EnergyInputHatchBlockEntity extends HatchBlockEntity {
     protected long getMaxStoredEu() {
         return tier.getMaxInsert() * 10;
     }
+
+    public EnergyTier getTier() {
+        if (tier == null)
+            return null;
+        double input = tier.getMaxInsert() / 4;
+        if (input <= 8) {
+            return EnergyTier.LOW;
+        } else if (input <= 32) {
+            return EnergyTier.MEDIUM;
+        } else if (input <= 32 * 4) {
+            return EnergyTier.HIGH;
+        }
+        return EnergyTier.INFINITE;
+    }
+
 }

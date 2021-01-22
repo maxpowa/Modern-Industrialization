@@ -29,10 +29,14 @@ import aztech.modern_industrialization.api.energy.EnergyExtractable;
 import aztech.modern_industrialization.inventory.ConfigurableFluidStack;
 import aztech.modern_industrialization.machines.impl.MachineBlockEntity;
 import aztech.modern_industrialization.machines.impl.MachineFactory;
+import net.minecraft.block.BlockState;
+import net.minecraft.nbt.CompoundTag;
+import team.reborn.energy.EnergySide;
 
 public final class SteamTurbineBlockEntity extends MachineBlockEntity {
     private final EnergyExtractable extractable;
     private final CableTier tier;
+    private int extraStoredEu = 0;
 
     public SteamTurbineBlockEntity(MachineFactory factory, CableTier tier) {
         super(factory);
@@ -48,16 +52,44 @@ public final class SteamTurbineBlockEntity extends MachineBlockEntity {
     }
 
     @Override
+    protected boolean canAcceptEnergy(EnergySide side) {
+        return false;
+    }
+
+    @Override
+    public CompoundTag toTag(CompoundTag tag) {
+        tag.putInt("extraStoredEu", extraStoredEu);
+        super.toTag(tag);
+        return tag;
+    }
+
+    @Override
+    public void fromTag(BlockState state, CompoundTag tag) {
+        super.fromTag(state, tag);
+        this.extraStoredEu = tag.getInt("extraStoredEu");
+    }
+
+    @Override
     public void tick() {
         if (world.isClient)
             return;
 
+        super.tick();
+
         boolean wasActive = isActive;
 
-        int transformed = (int) Math.min(Math.min(fluidStacks.get(0).getAmount(), getMaxStoredEu() - storedEu), tier.getEu());
+        while (tier.getEu() > extraStoredEu) {
+            ConfigurableFluidStack stack = fluidStacks.get(0);
+            if (stack.getAmount() <= 0)
+                break;
+            extraStoredEu += 1;
+            stack.decrement(1);
+        }
+
+        int transformed = (int) Math.min(Math.min(extraStoredEu, tier.getEu()), getMaxStoredEu() - getEnergy());
         if (transformed > 0) {
-            fluidStacks.get(0).decrement(transformed);
-            storedEu += transformed;
+            extraStoredEu -= transformed;
+            addEnergy(transformed);
             isActive = true;
         } else {
             isActive = false;

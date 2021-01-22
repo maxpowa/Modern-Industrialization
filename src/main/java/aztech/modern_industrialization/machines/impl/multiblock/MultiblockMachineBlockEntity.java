@@ -35,6 +35,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import team.reborn.energy.EnergyTier;
 
 public class MultiblockMachineBlockEntity extends MachineBlockEntity {
     protected Map<BlockPos, HatchBlockEntity> linkedHatches = new TreeMap<>();
@@ -269,8 +270,8 @@ public class MultiblockMachineBlockEntity extends MachineBlockEntity {
     }
 
     @Override
-    public MachineTier getTier() {
-        return tier;
+    public EnergyTier getTier() {
+        return mapTierToEnergy(tier);
     }
 
     @Override

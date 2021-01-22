@@ -49,7 +49,8 @@
   "depends": {
     "fabricloader": ">=0.7.4",
     "fabric": ">=0.25",
-    "minecraft": "1.16.x"
+    "minecraft": "1.16.x",
+    "reborncore": ">=4.6"
   },
   "recommends": {
     "roughlyenoughitems": "*",

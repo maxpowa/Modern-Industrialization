@@ -32,6 +32,7 @@ import aztech.modern_industrialization.machines.impl.MachineBlockEntity;
 import aztech.modern_industrialization.machines.impl.MachineFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundTag;
+import team.reborn.energy.EnergySide;
 
 public class DieselGeneratorBlockEntity extends MachineBlockEntity {
     private final EnergyExtractable extractable;
@@ -68,6 +69,8 @@ public class DieselGeneratorBlockEntity extends MachineBlockEntity {
         if (world.isClient)
             return;
 
+        super.tick();
+
         boolean wasActive = isActive;
 
         while (tier.getEu() > extraStoredEu) {
@@ -81,10 +84,10 @@ public class DieselGeneratorBlockEntity extends MachineBlockEntity {
             stack.decrement(1);
         }
 
-        int transformed = (int) Math.min(Math.min(extraStoredEu, tier.getEu()), getMaxStoredEu() - storedEu);
+        int transformed = (int) Math.min(Math.min(extraStoredEu, tier.getEu()), getMaxStoredEu() - getEnergy());
         if (transformed > 0) {
             extraStoredEu -= transformed;
-            storedEu += transformed;
+            addEnergy(transformed);
             isActive = true;
         } else {
             isActive = false;
@@ -96,6 +99,11 @@ public class DieselGeneratorBlockEntity extends MachineBlockEntity {
             sync();
         }
         markDirty();
+    }
+
+    @Override
+    protected boolean canAcceptEnergy(EnergySide side) {
+        return false;
     }
 
     @Override

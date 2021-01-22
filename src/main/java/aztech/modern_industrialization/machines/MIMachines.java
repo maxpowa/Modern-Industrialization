@@ -447,7 +447,7 @@ public class MIMachines {
         }
 
         for (CableTier tier : CableTier.values()) {
-            new MachineFactory(tier.name + "_energy_input_hatch", null, f -> new EnergyInputHatchBlockEntity(f, tier), null, 0, 0, 0, 0)
+            new MachineFactory(tier.name + "_energy_input_hatch", LV, f -> new EnergyInputHatchBlockEntity(f, tier), null, 0, 0, 0, 0)
                     .setupElectricityBar(76, 39, false).setupBackground("default.png").setupCasing(tier.name);
         }
     }
@@ -531,8 +531,8 @@ public class MIMachines {
                 f -> new LargeSteamBoilerBlockEntity(f, Collections.singletonList(LARGE_BOILER_SHAPE)), null, 1, 0, 1, 1)
                         .setupProgressBar(176, 0, 15, 51, 14, 14, false, true).setupEfficiencyBar(0, 166, 50, 62, 100, 2).hideEfficiencyTooltip()
                         .setupBackground("steam_boiler.png").setupOverlays("large_boiler", true, false, false).setupCasing("bronze_plated_bricks");
-        ELECTRIC_BLAST_FURNACE = new MachineFactory("electric_blast_furnace", UNLIMITED, ElectricBlastFurnaceBlockEntity::new, RECIPE_BLAST_FURNACE,
-                2, 1, 1, 1).setInputSlotPosition(56, 35, 1, 2).setOutputSlotPosition(102, 35, 1, 1).setInputLiquidSlotPosition(36, 35, 1, 1)
+        ELECTRIC_BLAST_FURNACE = new MachineFactory("electric_blast_furnace", LV, ElectricBlastFurnaceBlockEntity::new, RECIPE_BLAST_FURNACE, 2, 1, 1,
+                1).setInputSlotPosition(56, 35, 1, 2).setOutputSlotPosition(102, 35, 1, 1).setInputLiquidSlotPosition(36, 35, 1, 1)
                         .setLiquidOutputSlotPosition(122, 35, 1, 1).setupProgressBar(76, 35, 22, 15, true).setupBackground("steam_furnace.png")
                         .setupEfficiencyBar(0, 166, 38, 62, 100, 2).setupOverlays("electric_blast_furnace", true, false, false)
                         .setupCasing("heatproof");
@@ -548,32 +548,32 @@ public class MIMachines {
                         .setupProgressBar(76, 35, 22, 15, true).setupBackground("steam_furnace.png").setupEfficiencyBar(0, 166, 38, 62, 100, 2)
                         .setupOverlays("oil_drilling_rig", true, false, false).setupCasing("steel");
 
-        new MachineFactory("vacuum_freezer", UNLIMITED, f -> new MultiblockMachineBlockEntity(f, Collections.singletonList(VACUUM_FREEZER_SHAPE)),
+        new MachineFactory("vacuum_freezer", LV, f -> new MultiblockMachineBlockEntity(f, Collections.singletonList(VACUUM_FREEZER_SHAPE)),
                 RECIPE_VACUUM_FREEZER, 2, 1, 1, 1).setInputSlotPosition(56, 35, 1, 2).setOutputSlotPosition(102, 35, 1, 1)
                         .setInputLiquidSlotPosition(36, 35, 1, 1).setLiquidOutputSlotPosition(122, 35, 1, 1).setupProgressBar(76, 35, 22, 15, true)
                         .setupBackground("steam_furnace.png").setupEfficiencyBar(0, 166, 38, 62, 100, 2)
                         .setupOverlays("vacuum_freezer", true, false, false).setupCasing("frostproof");
 
-        new MachineFactory("nuclear_reactor", null, f -> new NuclearReactorBlockEntity(f, Collections.singletonList(NUCLEAR_REACTOR_SHAPE)), null, 64,
+        new MachineFactory("nuclear_reactor", LV, f -> new NuclearReactorBlockEntity(f, Collections.singletonList(NUCLEAR_REACTOR_SHAPE)), null, 64,
                 0, 0, 0).setInputSlotPosition(15, 20, 8, 8).setupBackground("nuclear.png", 176, 256).setInventoryPos(8, 174)
                         .setupOverlays("vacuum_freezer", true, false, false).setupCasing("nuclear")
                         .setInsertPredicate(stack -> stack.getItem() instanceof MINuclearItem);
 
         registerHatches();
 
-        new MachineFactory("lv_steam_turbine", null, f -> new SteamTurbineBlockEntity(f, CableTier.LV), null, 0, 0, 1, 0)
+        new MachineFactory("lv_steam_turbine", STEEL, f -> new SteamTurbineBlockEntity(f, CableTier.LV), null, 0, 0, 1, 0)
                 .setInputLiquidSlotPosition(23, 23, 1, 1).setupElectricityBar(76, 39, false).setupBackground("default.png").setupCasing("lv") // TODO:
                                                                                                                                               // custom
                                                                                                                                               // electric
                                                                                                                                               // output
                 .setupOverlays("steam_turbine", true, false, false);
-        new MachineFactory("mv_steam_turbine", null, f -> new SteamTurbineBlockEntity(f, CableTier.MV), null, 0, 0, 1, 0)
+        new MachineFactory("mv_steam_turbine", LV, f -> new SteamTurbineBlockEntity(f, CableTier.MV), null, 0, 0, 1, 0)
                 .setInputLiquidSlotPosition(23, 23, 1, 1).setupElectricityBar(76, 39, false).setupBackground("default.png").setupCasing("mv") // TODO:
                                                                                                                                               // custom
                                                                                                                                               // electric
                                                                                                                                               // output
                 .setupOverlays("steam_turbine", true, false, false);
-        DIESEL_GENERATOR = new MachineFactory("diesel_generator", null, f -> new DieselGeneratorBlockEntity(f, CableTier.MV), null, 0, 0, 1, 0)
+        DIESEL_GENERATOR = new MachineFactory("diesel_generator", LV, f -> new DieselGeneratorBlockEntity(f, CableTier.MV), null, 0, 0, 1, 0)
                 .setInputLiquidSlotPosition(23, 23, 1, 1).setupElectricityBar(76, 39, false).setupBackground("default.png").setupCasing("mv") // TODO:
                                                                                                                                               // custom
                                                                                                                                               // electric

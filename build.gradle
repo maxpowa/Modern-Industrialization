@@ -139,6 +139,10 @@ dependencies {
     include "com.github.Technici4n:KubeJS-Fabric:${project.kjs_commit}"
     modImplementation "teamreborn:energy:${project.tr_energy_version}"
     include "teamreborn:energy:${project.tr_energy_version}"
+    modImplementation ("RebornCore:RebornCore-${project.tr_core_version}") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
+    include "RebornCore:RebornCore-${project.tr_core_version}"
     modApi "net.fabricmc.fabric-api:fabric-provider-api-v1:${project.api_provider_version}"
     include "net.fabricmc.fabric-api:fabric-provider-api-v1:${project.api_provider_version}"
 

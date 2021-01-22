@@ -63,5 +63,24 @@ public class EnergyApi {
                 return null;
             }
         }));
+        MOVEABLE.registerBlockEntityFallback(((blockEntity, direction) -> {
+            if (Energy.valid(blockEntity)) {
+                EnergyHandler handler = Energy.of(blockEntity);
+                handler.side(direction);
+                return new EnergyExtractable() {
+                    @Override
+                    public long extractEnergy(long amount) {
+                        return (long) handler.extract(amount);
+                    }
+
+                    @Override
+                    public boolean canExtract(CableTier tier) {
+                        return true;
+                    }
+                };
+            } else {
+                return null;
+            }
+        }));
     }
 }

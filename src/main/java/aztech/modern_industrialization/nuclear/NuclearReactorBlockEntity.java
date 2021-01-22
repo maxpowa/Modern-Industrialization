@@ -153,6 +153,9 @@ public class NuclearReactorBlockEntity extends MultiblockMachineBlockEntity {
     public void tick() {
         if (world.isClient)
             return;
+
+        super.tick();
+
         this.tickCheckShape();
         for (HatchBlockEntity hatch : linkedHatches.values()) {
             if (hatch.type == HatchType.ITEM_INPUT) {

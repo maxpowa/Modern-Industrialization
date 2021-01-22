@@ -52,6 +52,9 @@ public class TransformerBlockEntity extends MachineBlockEntity {
 
     @Override
     public void tick() {
+        if (world.isClient)
+            return;
+        super.tick();
         autoExtractEnergy(outputDirection, outputTier);
         markDirty();
     }

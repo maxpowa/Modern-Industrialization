@@ -23,7 +23,6 @@
  */
 package aztech.modern_industrialization.machines.impl;
 
-import aztech.modern_industrialization.api.FastBlockEntity;
 import aztech.modern_industrialization.mixin_impl.WorldRendererGetter;
 import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
@@ -32,11 +31,13 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.Direction;
+import reborncore.common.powerSystem.PowerAcceptorBlockEntity;
 
 /**
  * A generic machine_recipe BlockEntity.
  */
-public abstract class AbstractMachineBlockEntity extends FastBlockEntity implements RenderAttachmentBlockEntity, BlockEntityClientSerializable {
+public abstract class AbstractMachineBlockEntity extends PowerAcceptorBlockEntity
+        implements RenderAttachmentBlockEntity, BlockEntityClientSerializable {
     protected Direction facingDirection;
     protected Direction outputDirection;
     protected boolean extractItems = false;

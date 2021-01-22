@@ -90,7 +90,7 @@ public class MachineScreenHandler extends ConfigurableScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return this.inventory.canPlayerUse(player);
+        return true;
     }
 
     @Override

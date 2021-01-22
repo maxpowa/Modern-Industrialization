@@ -58,6 +58,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.Registry;
+import team.reborn.energy.EnergyTier;
 
 // TODO: refactor
 public class MachineBlockEntity extends AbstractMachineBlockEntity implements Tickable, ExtendedScreenHandlerFactory, MachineInventory {
@@ -69,7 +70,7 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
     protected long storedEu = 0;
 
     protected long getMaxStoredEu() {
-        return factory.tier == null ? -1 : factory.tier.getMaxStoredEu();
+        return factory.tier == null ? -1 : factory.tier.getMaxEu() * 100;
     }
 
     protected MachineFactory factory;
@@ -126,9 +127,43 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
             }
         };
 
-        if (getTier() == MachineTier.LV) {
+        if (mapTier(getTier()) == MachineTier.LV) {
             insertable = buildInsertable(CableTier.LV);
         }
+    }
+
+    public EnergyTier getTier() {
+        return mapTierToEnergy(factory.tier);
+    }
+
+    public MachineTier mapTier(EnergyTier tier) {
+        if (tier == null) {
+            return null;
+        }
+        double input = tier.getMaxInput() / 16;
+        if (input <= 2) {
+            return MachineTier.BRONZE;
+        } else if (input <= 4) {
+            return MachineTier.STEEL;
+        } else if (input <= 8) {
+            return MachineTier.LV;
+        }
+        return MachineTier.UNLIMITED;
+    }
+
+    public EnergyTier mapTierToEnergy(MachineTier tier) {
+        if (tier == null) {
+            return EnergyTier.MICRO;
+        }
+        double input = tier.getMaxEu();
+        if (input <= 2) {
+            return EnergyTier.LOW;
+        } else if (input <= 4) {
+            return EnergyTier.MEDIUM;
+        } else if (input <= 8) {
+            return EnergyTier.HIGH;
+        }
+        return EnergyTier.INFINITE;
     }
 
     protected int getProperty(int index) {
@@ -143,11 +178,11 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         else if (index == 4)
             return maxEfficiencyTicks;
         else if (index == 5)
-            return (int) storedEu;
+            return (int) getEnergy();
         else if (index == 6)
             return activeRecipe != null && recipeEnergy != 0 ? activeRecipe.eu : 0;
         else if (index == 7)
-            return (int) getMaxStoredEu();
+            return (int) getBaseMaxPower();
         else if (index == 8)
             return recipeMaxEu;
         return -1;
@@ -191,8 +226,30 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         }
         tag.putInt("efficiencyTicks", this.efficiencyTicks);
         tag.putInt("maxEfficiencyTicks", this.maxEfficiencyTicks);
-        tag.putLong("storedEu", this.storedEu);
         return tag;
+    }
+
+    @Override
+    public double getBaseMaxPower() {
+        return getMaxStoredEu();
+    }
+
+    @Override
+    public double getBaseMaxOutput() {
+        if (factory == null) {
+            return 0;
+        }
+        EnergyTier tier = mapTierToEnergy(factory.tier);
+        return tier == null ? 0 : tier.getMaxOutput();
+    }
+
+    @Override
+    public double getBaseMaxInput() {
+        if (factory == null) {
+            return 0;
+        }
+        EnergyTier tier = mapTierToEnergy(factory.tier);
+        return tier == null ? 0 : tier.getMaxInput();
     }
 
     @Override
@@ -223,7 +280,6 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         }
         this.efficiencyTicks = tag.getInt("efficiencyTicks");
         this.maxEfficiencyTicks = tag.getInt("maxEfficiencyTicks");
-        this.storedEu = tag.getLong("storedEu");
     }
 
     public MachineFactory getFactory() {
@@ -265,10 +321,6 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         }
     }
 
-    public MachineTier getTier() {
-        return factory.tier;
-    }
-
     /**
      * Try to start a recipe. Return true if success, false otherwise. If false,
      * nothing was changed.
@@ -299,13 +351,13 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         if (efficiencyTicks != 0)
             throw new RuntimeException("Illegal state");
         for (int ticks = 0; true; ++ticks) {
-            if (getRecipeMaxEu(getTier(), eu, totalEu, ticks) == Math.min(getTier().getMaxEu(), totalEu))
+            if (getRecipeMaxEu(mapTier(getTier()), eu, totalEu, ticks) == Math.min(mapTier(getTier()).getMaxEu(), totalEu))
                 return ticks;
         }
     }
 
     protected boolean banRecipe(MachineRecipe recipe) {
-        return recipe.eu > getTier().getMaxEu();
+        return recipe.eu > mapTier(getTier()).getMaxEu();
     }
 
     protected boolean updateActiveRecipe() {
@@ -327,7 +379,7 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
                 activeRecipe = recipe;
                 usedEnergy = 0;
                 recipeEnergy = recipe.eu * recipe.duration;
-                recipeMaxEu = getRecipeMaxEu(getTier(), recipe.eu, recipeEnergy, efficiencyTicks);
+                recipeMaxEu = getRecipeMaxEu(mapTier(getTier()), recipe.eu, recipeEnergy, efficiencyTicks);
                 return true;
             }
         }
@@ -342,50 +394,52 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
 
         boolean wasActive = isActive;
 
-        // START RECIPE IF NECESSARY
-        // usedEnergy == 0 means that no recipe is currently started
-        boolean recipeStarted = false;
-        if (usedEnergy == 0 && canRecipeStart()) {
-            if (getEu(1, true) == 1) {
-                recipeStarted = updateActiveRecipe();
+        if (this.factory.recipeType != null) {
+            // START RECIPE IF NECESSARY
+            // usedEnergy == 0 means that no recipe is currently started
+            boolean recipeStarted = false;
+            if (usedEnergy == 0 && canRecipeStart()) {
+                if (getEu(1, true) == 1) {
+                    recipeStarted = updateActiveRecipe();
+                }
             }
-        }
 
-        // PROCESS RECIPE TICK
-        int eu = 0;
-        boolean finishedRecipe = false; // whether the recipe finished this tick
-        if (activeRecipe != null && canRecipeProgress() && (usedEnergy > 0 || recipeStarted)) {
-            eu = getEu(Math.min(recipeMaxEu, recipeEnergy - usedEnergy), false);
-            isActive = eu > 0;
-            usedEnergy += eu;
+            // PROCESS RECIPE TICK
+            int eu = 0;
+            boolean finishedRecipe = false; // whether the recipe finished this tick
+            if (activeRecipe != null && canRecipeProgress() && (usedEnergy > 0 || recipeStarted)) {
+                eu = getEu(Math.min(recipeMaxEu, recipeEnergy - usedEnergy), false);
+                isActive = eu > 0;
+                usedEnergy += eu;
 
-            if (usedEnergy == recipeEnergy) {
-                putItemOutputs(activeRecipe, false, false);
-                putFluidOutputs(activeRecipe, false, false);
-                clearLocks();
-                usedEnergy = 0;
-                finishedRecipe = true;
+                if (usedEnergy == recipeEnergy) {
+                    putItemOutputs(activeRecipe, false, false);
+                    putFluidOutputs(activeRecipe, false, false);
+                    clearLocks();
+                    usedEnergy = 0;
+                    finishedRecipe = true;
+                }
+            } else {
+                isActive = false;
             }
-        } else {
-            isActive = false;
-        }
 
-        // ADD OR REMOVE EFFICIENCY TICKS
-        // If we finished a recipe, we can add an efficiency tick
-        if (finishedRecipe) {
-            if (efficiencyTicks < maxEfficiencyTicks)
-                ++efficiencyTicks;
-        } else if (eu < recipeMaxEu) { // If we didn't use the max energy this tick and the recipe is still ongoing,
-                                       // remove one efficiency tick
-            if (efficiencyTicks > 0) {
-                efficiencyTicks--;
+            // ADD OR REMOVE EFFICIENCY TICKS
+            // If we finished a recipe, we can add an efficiency tick
+            if (finishedRecipe) {
+                if (efficiencyTicks < maxEfficiencyTicks)
+                    ++efficiencyTicks;
+            } else if (eu < recipeMaxEu) { // If we didn't use the max energy this tick and the recipe is still ongoing,
+                                           // remove one efficiency tick
+                if (efficiencyTicks > 0) {
+                    efficiencyTicks--;
+                }
             }
-        }
 
-        // If the recipe is done, allow starting another one when the efficiency reaches
-        // zero
-        if (efficiencyTicks == 0 && usedEnergy == 0) {
-            activeRecipe = null;
+            // If the recipe is done, allow starting another one when the efficiency reaches
+            // zero
+            if (efficiencyTicks == 0 && usedEnergy == 0) {
+                activeRecipe = null;
+            }
         }
 
         if (wasActive != isActive) {
@@ -645,9 +699,9 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
             }
             return totalRem;
         } else {
-            int ext = (int) Math.min(storedEu, maxEu);
+            int ext = (int) Math.min(this.getEnergy(), maxEu);
             if (!simulate) {
-                storedEu -= ext;
+                this.useEnergy(ext);
             }
             return ext;
         }
@@ -683,10 +737,9 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         return new EnergyInsertable() {
             @Override
             public long insertEnergy(long amount) {
-                long ins = Math.min(amount, getMaxStoredEu() - storedEu);
-                storedEu += ins;
-                markDirty();
-                return amount - ins;
+                double energyBefore = getEnergy();
+                addEnergy(amount);
+                return (long) Math.max((energyBefore - getEnergy()) - amount, 0);
             }
 
             @Override
@@ -700,10 +753,9 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
         return new EnergyExtractable() {
             @Override
             public long extractEnergy(long maxAmount) {
-                long ext = Math.min(maxAmount, storedEu);
-                storedEu -= ext;
-                markDirty();
-                return ext;
+                double energyBefore = getEnergy();
+                addEnergy(maxAmount);
+                return (long) Math.max((energyBefore - getEnergy()) - maxAmount, 0);
             }
 
             @Override
@@ -714,9 +766,9 @@ public class MachineBlockEntity extends AbstractMachineBlockEntity implements Ti
     }
 
     protected void autoExtractEnergy(Direction direction, CableTier extractTier) {
-        EnergyMoveable insertable = EnergyApi.MOVEABLE.get(world, pos.offset(direction), direction.getOpposite());
-        if (insertable instanceof EnergyInsertable && ((EnergyInsertable) insertable).canInsert(extractTier)) {
-            storedEu = ((EnergyInsertable) insertable).insertEnergy(storedEu);
+        EnergyMoveable moveable = EnergyApi.MOVEABLE.get(world, pos.offset(direction), direction.getOpposite());
+        if (moveable instanceof EnergyInsertable && ((EnergyInsertable) moveable).canInsert(extractTier)) {
+            setEnergy(((EnergyInsertable) moveable).insertEnergy((long) getEnergy()));
         }
     }
 
